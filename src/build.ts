@@ -1,7 +1,7 @@
 import { build } from 'vite';
 import { Props } from './types';
 import { resolve } from 'node:path';
-export function BuildWithVite(props: Props) {
+export function BuildWithVite(ssr: boolean, props: Props) {
   return build({
     root: props.root,
     configFile: props.configFile,
@@ -9,9 +9,9 @@ export function BuildWithVite(props: Props) {
       {
         name: 'vite:pjblog:build',
         apply: 'build',
-        config(_, { command, ssrBuild }) {
+        config(_, { command }) {
           if (command !== 'build') return;
-          if (ssrBuild) {
+          if (ssr) {
             return {
               build: {
                 ssr: true,
