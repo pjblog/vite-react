@@ -1,10 +1,11 @@
 {
   "name": "@pjblog/vite-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PJBlog theme build/serve tool",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rm -rf ./dist && tsc -d"
+    "build": "rm -rf ./dist && tsc -d",
+    "pub": "npm run build && git add . && git commit -am 'update' && git push && npm publish"
   },
   "keywords": [
     "pjblog",

@@ -100,7 +100,7 @@ export function createEnterence(props: Props): any {
         scriptLinks: [props.clientUrl],
         stylesheets: [],
         bodyPrefixScripts: [
-          `;window.${props.namespace} = ${JSON.stringify(state)};`
+          `;window.PJBLOG_INITIALIZE_STATE = ${JSON.stringify(state)};`
         ]
       }, createElement(PAGE, state)));
       pipeable.pipe(stm);
@@ -130,7 +130,7 @@ export function createEnterence(props: Props): any {
         scriptLinks: [distScript],
         stylesheets: distChunk.css.map((css: string) => '/%/' + css),
         bodyPrefixScripts: [
-          `;window.${props.namespace} = ${JSON.stringify(state)};`
+          `;window.PJBLOG_INITIALIZE_STATE = ${JSON.stringify(state)};`
         ]
       }, createElement(buildPageFC, state)));
       pipeable.pipe(stm);
