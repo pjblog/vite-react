@@ -21,7 +21,14 @@ export function BuildWithVite(ssr: boolean, props: Props) {
                 ssrManifest: true,
                 rollupOptions: {
                   input: {
-                    server: resolve(props.root, props.entry),
+                    html: resolve(props.root, props.entries.html),
+                    home: resolve(props.root, props.entries.home),
+                    articles: resolve(props.root, props.entries.articles),
+                    article: resolve(props.root, props.entries.article),
+                    forbiden: resolve(props.root, props.entries.forbiden),
+                    close: resolve(props.root, props.entries.close),
+                    notfound: resolve(props.root, props.entries.notfound),
+                    error: resolve(props.root, props.entries.error),
                   }
                 }
               },

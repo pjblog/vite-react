@@ -86,11 +86,14 @@ export function createEnterence(props: Props): any {
       return this.createInitialize();
     }
 
-    private async createViteDevPageStream(name: string, state: any) {
+    private async createViteDevPageStream<T extends keyof Props['entries']>(name: T, state: any) {
       const stm = new PassThrough();
-      const exps = await this.vite.ssrLoadModule(resolve(props.root, props.entry));
-      const HTML = exps.html as FC<Html.Props>;
-      const PAGE = exps[name] as FC;
+      const [html, page] = await Promise.all([
+        this.vite.ssrLoadModule(resolve(props.root, props.entries.html)),
+        this.vite.ssrLoadModule(resolve(props.root, props.entries[name])),
+      ])
+      const HTML = html.default as FC<Html.Props>;
+      const PAGE = page.default as FC;
       const pipeable = renderToPipeableStream(createElement(HTML, {
         meta: state.meta,
         dev: true,
@@ -104,20 +107,21 @@ export function createEnterence(props: Props): any {
       return stm;
     }
 
-    private createPageStream(name: string, state: any) {
+    private createPageStream<T extends keyof Props['entries']>(name: T, state: any) {
       const stm = new PassThrough();
       const distManifestFilePath = resolve(props.root, props.dist, 'manifest.json');
       const buildManifestFilePath = resolve(props.root, props.build, 'manifest.json');
       const distManifest = require(distManifestFilePath);
       const buildManifest = require(buildManifestFilePath);
       const distChunk = distManifest['index.html'];
-      const buildChunk = buildManifest[props.entry];
+      const buildChunk = buildManifest[props.entries[name]];
+      const buildHtmlChunk = buildManifest[props.entries.html];
 
-      const buildFilePath = resolve(props.root, props.build, buildChunk.file);
-      const buildExports = require(buildFilePath);
+      const buildHtmlFilePath = resolve(props.root, props.build, buildHtmlChunk.file);
+      const buildPageFilePath = resolve(props.root, props.build, buildChunk.file);
 
-      const buildHtmlFC = buildExports.html as FC<Html.Props>;
-      const buildPageFC = buildExports[name] as FC;
+      const buildHtmlFC = require(buildHtmlFilePath).default as FC<Html.Props>;
+      const buildPageFC = require(buildPageFilePath).default as FC;
 
       const distScript = '/%/' + distChunk.file;
 
