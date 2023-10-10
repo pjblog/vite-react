@@ -1,6 +1,6 @@
 {
   "name": "@pjblog/vite-react",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "PJBlog theme build/serve tool",
   "main": "dist/index.js",
   "scripts": {
