@@ -33,7 +33,7 @@ export function BuildWithVite(ssr: boolean, props: Props) {
                 }
               },
               ssr: {
-                format: 'cjs',
+                format: 'esm',
               }
             }
           } else {

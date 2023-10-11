@@ -5,14 +5,14 @@ import { createServer, type ViteDevServer } from 'vite';
 import { Server, Page, configs } from '@pjblog/blog';
 import { Context, Middleware } from 'koa';
 import { PassThrough } from 'node:stream';
-import { FC } from 'react';
+import React, { FC } from 'react';
 import { renderToPipeableStream } from 'react-dom/server';
 import { createElement } from 'react';
 import { resolve } from 'node:path';
 import { Theme, Home, Html, Articles, Article, Forbiden, Close, NotFound, ServerError } from '@pjblog/types';
-import { Props } from './types';
+import { Props, Injector } from './types';
 
-export function createEnterence(props: Props): any {
+export function createEnterence(props: Props, prodRenderCallback?: Injector): any {
   /**
    * 主题静态目录
    * @param ctx 
@@ -107,7 +107,15 @@ export function createEnterence(props: Props): any {
       return stm;
     }
 
-    private createPageStream<T extends keyof Props['entries']>(name: T, state: any) {
+    private import(file: string) {
+      try {
+        return import(file);
+      } catch (e) {
+        return Promise.resolve(require(file));
+      }
+    }
+
+    private async createPageStream<T extends keyof Props['entries']>(name: T, state: any) {
       const stm = new PassThrough();
       const distManifestFilePath = resolve(props.root, props.dist, 'manifest.json');
       const buildManifestFilePath = resolve(props.root, props.build, 'manifest.json');
@@ -120,20 +128,46 @@ export function createEnterence(props: Props): any {
       const buildHtmlFilePath = resolve(props.root, props.build, buildHtmlChunk.file);
       const buildPageFilePath = resolve(props.root, props.build, buildChunk.file);
 
-      const buildHtmlFC = require(buildHtmlFilePath).default as FC<Html.Props>;
-      const buildPageFC = require(buildPageFilePath).default as FC;
+      const [_html, _page] = await Promise.all([
+        this.import(buildHtmlFilePath),
+        this.import(buildPageFilePath),
+      ])
 
-      const distScript = '/%/' + distChunk.file;
+      const buildHtmlFC = _html.default as FC<Html.Props>;
+      const buildPageFC = _page.default as FC;
+
+      const distScript: string[] = ['/%/' + distChunk.file];
+      const distCsses: string[] = (distChunk.css || []).map((css: string) => '/%/' + css);
+      const distStyles: string[] = [];
+      const distBodyPrefixScripts: string[] = [`;window.PJBLOG_INITIALIZE_STATE = ${JSON.stringify(state)};`];
+      const distBodySuffixScripts: string[] = [];
+      let children: React.ReactNode = createElement(buildPageFC, state);
+
+      if (prodRenderCallback) {
+        children = await Promise.resolve(prodRenderCallback({
+          name,
+          manifest: distManifest,
+          ssrManifest: buildManifest,
+          stylesheets: distCsses,
+          scriptLinks: distScript,
+          styles: distStyles,
+          bodyPrefixScripts: distBodyPrefixScripts,
+          bodySuffixScripts: distBodySuffixScripts,
+          children,
+        }))
+      }
 
       const pipeable = renderToPipeableStream(createElement(buildHtmlFC, {
         meta: state.meta,
-        scriptLinks: [distScript],
-        stylesheets: distChunk.css.map((css: string) => '/%/' + css),
-        bodyPrefixScripts: [
-          `;window.PJBLOG_INITIALIZE_STATE = ${JSON.stringify(state)};`
-        ]
-      }, createElement(buildPageFC, state)));
+        scriptLinks: distScript,
+        stylesheets: distCsses,
+        bodyPrefixScripts: distBodyPrefixScripts,
+        bodySuffixScripts: distBodySuffixScripts,
+        styles: distStyles
+      }, children));
+
       pipeable.pipe(stm);
+
       return stm;
     }
 
